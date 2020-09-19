@@ -8,7 +8,7 @@ export default function ListScreen({
   periods,
   currentPeriod,
   filteredText,
-  onDeleteTransactions,
+  onDeleteTransaction,
   onEditTransaction,
   onNewTransaction,
   onFilterChange,
@@ -37,10 +37,9 @@ export default function ListScreen({
       />
 
       <div style={{ marginTop: '10px', marginBottom: '20px' }}>
-        <button 
-        className="waves-effect waves-light btn"
-        onClick={onNewTransaction}
-        
+        <button
+          className="waves-effect waves-light btn"
+          onClick={onNewTransaction}
         >
           Novo Lançamento
         </button>
@@ -65,7 +64,7 @@ export default function ListScreen({
               </button>
               <button
                 className="waves-effect waves-light btn red darken-4 "
-                onClick={onDeleteTransactions}
+                onClick={onDeleteTransaction}
                 id={transaction._id}
                 style={{ marginLeft: '10px' }}
               >

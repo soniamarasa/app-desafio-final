@@ -4,19 +4,19 @@ const INSERTING = 0;
 const EDITING = 1;
 
 function today() {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = (date.getMonth()+1).toString().padStart(2,'0');
-    const day = (date.getDate()).toString().padStart(2,'0');
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
 
-    const today = `${year}-${month}-${day}`;
+  const today = `${year}-${month}-${day}`;
 
-    return today;
+  return today;
 }
 
 export default function MaintenanceScreen({ transaction, onCancel, onSave }) {
   const [description, setDescription] = React.useState('');
-  const [value, setValue] = React.useState('0');
+  const [value, setValue] = React.useState('');
   const [category, setCategory] = React.useState('');
   const [date, setDate] = React.useState(today());
   const [type, setType] = React.useState('-');
@@ -67,14 +67,14 @@ export default function MaintenanceScreen({ transaction, onCancel, onSave }) {
   };
 
   const handleSaveClick = () => {
-      const newTransaction = {
-          _id: !!transaction ? transaction._id : null,
-          description,
-          value,
-          type,
-          yearMonthDay: date,
-          category,
-      };
+    const newTransaction = {
+      _id: !!transaction ? transaction._id : null,
+      description,
+      value,
+      type,
+      yearMonthDay: date,
+      category,
+    };
 
     onSave(newTransaction);
   };
@@ -126,6 +126,9 @@ export default function MaintenanceScreen({ transaction, onCancel, onSave }) {
           value={value}
           onChange={handleValueChange}
           id="inputValue"
+          min='0'
+          step='0.01'
+          required
         />
         <label htmlFor="inputValue" className="active">
           Valor:

@@ -60,9 +60,10 @@ export default function App() {
   React.useEffect(() => {
     const fetchTransactions = async () => {
       const { data } = await api.get(`/transaction?period=${currentPeriod}`);
-      console.log(data);
-
-      setTransactions(data.transactions);
+      const ordTrans = data.transactions.sort((a, b) =>
+        a.yearMonthDay.localeCompare(b.yearMonthDay)
+      );
+      setTransactions(ordTrans);
     };
 
     fetchTransactions();
@@ -146,13 +147,12 @@ export default function App() {
       const { data } = await api.post(`${RESOURCE}`, insertedTransaction);
 
       const newTransactions = [...transactions, data.transaction];
-      newTransaction.sort((a,b) => 
-      a.yearMonthDay.localeCompare(b.yearMonthDay));
-
+      newTransactions.sort((a, b) =>
+        a.yearMonthDay.localeCompare(b.yearMonthDay)
+      );
 
       setTransactions(newTransactions);
       setNewTransaction(false);
-
     } else {
       const editedTransaction = {
         ...newTransaction,
