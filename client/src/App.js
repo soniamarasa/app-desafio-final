@@ -1,7 +1,10 @@
 import React from 'react';
 import axios from 'axios';
+import ListScreen from './components/ListScreen';
+import MaintenanceScreen from './components/MaintenanceScreen';
 
 const api = axios.create({ baseURL: 'api' });
+const RESOURCE = '/transaction';
 
 const PERIODS = [
   '2019-01',
@@ -44,14 +47,14 @@ const PERIODS = [
 
 const LIST_SCREEN = 0;
 const MAINTENANCE_SCREEN = 1;
-const EARNING_COLOR = '#81ecec';
-const EXPENSE_COLOR = '#fab1a0';
 
 export default function App() {
   const [transactions, setTransactions] = React.useState([]);
   const [filteredTransactions, setFilteredTransactions] = React.useState([]);
   const [currentPeriod, setCurrentPeriod] = React.useState(PERIODS[0]);
-  const [currentScreen, setCurrentScreen] = React.useState(0);
+  const [currentScreen, setCurrentScreen] = React.useState(LIST_SCREEN);
+  const [filteredText, setFilteredText] = React.useState('');
+  const [selectedTransaction, setSelectedTransaction] = React.useState(null);
 
   React.useEffect(() => {
     const fetchTransactions = async () => {
@@ -59,59 +62,101 @@ export default function App() {
       console.log(data);
 
       setTransactions(data.transactions);
-      setFilteredTransactions(data.transactions);
     };
 
     fetchTransactions();
   }, [currentPeriod]);
+
+  React.useEffect(() => {
+    let newFilteredTransactions = [...transactions];
+
+    if (filteredText.trim() !== '') {
+      newFilteredTransactions = newFilteredTransactions.filter(
+        (transaction) => {
+          return transaction.description.toLowerCase().includes(filteredText);
+        }
+      );
+    }
+
+    setFilteredTransactions(newFilteredTransactions);
+  }, [transactions, filteredText]);
+
+  React.useEffect(() => {
+    const newScreen =
+      selectedTransaction !== null ? MAINTENANCE_SCREEN : LIST_SCREEN;
+
+    setCurrentScreen(newScreen);
+  }, [selectedTransaction]);
 
   const handlePeriodChange = (event) => {
     const newPeriod = event.target.value;
     setCurrentPeriod(newPeriod);
   };
 
-const {transactionStyle} = styles;
+  const handleDeleteTransaction = async (event) => {
+    const id = event.target.id;
+
+    await api.delete(`${RESOURCE}/${id}`);
+
+    const newTransactions = transactions.filter((transaction) => {
+      return transaction._id !== id;
+    });
+
+    setTransactions(newTransactions);
+  };
+
+  const handleFilterChange = (event) => {
+    const text = event.target.value.trim();
+    setFilteredText(text.toLowerCase());
+  };
+
+  const handleEditTransaction = async (event) => {
+    const id = event.target.id;
+
+    const newSelectecTransaction = filteredTransactions.find((transaction) => {
+      return transaction._id === id;
+    });
+
+    setSelectedTransaction(newSelectecTransaction);
+  };
+
+
+
+  const handleCancelMaintenance = () => {
+    setSelectedTransaction(null);
+
+  };
+
+  const handleSaveMaintenance = (newTransaction) => {
+    const {_id} = newTransaction;
+
+    const completeTransaction = {
+      ...newTransaction,
+      year: Number(newTransaction.yearMonthDay.substring(0,4)),
+      month: Number(newTransaction.yearMonthDay.substring(5,7)),
+      day: Number(newTransaction.yearMonthDay.substring(8,10)),
+    }
+    api.put(`${RESOURCE}/${_id}`, completeTransaction);
+  };
 
   return (
     <div className="container">
       <h1 className="center">Desafio Final do Bootcamp Full Stack</h1>
 
       {currentScreen === LIST_SCREEN ? (
-        <>
-          <select
-            className="browser-default"
-            value={currentPeriod}
-            onChange={handlePeriodChange}
-          >
-            {PERIODS.map((period) => {
-              return <option key={period}>{period}</option>;
-            })}
-          </select>
-
-          {filteredTransactions.map((transaction) => {
-            const currentColor = transaction.type === '+' ? EARNING_COLOR : EXPENSE_COLOR;
-            return (
-              <p key={transaction._id} style={{...transactionStyle, backgroundColor: currentColor}}>
-                {transaction.yearMonthDay} - {''}
-                <strong>{transaction.category}</strong> - {''}
-                {transaction.description} - {transaction.value}
-              </p>
-            );
-          })}
-        </>
+        <ListScreen
+          transactions={filteredTransactions}
+          periods={PERIODS}
+          currentPeriod={currentPeriod}
+          filteredText={filteredText}
+          onDeleteTransaction={handleDeleteTransaction}
+          onEditTransaction={handleEditTransaction}
+          onFilterChange={handleFilterChange}
+          onPeriodChange={handlePeriodChange}
+        />
       ) : (
-        <p>Tela de manutenção</p>
+        <MaintenanceScreen transaction={selectedTransaction} onCancel={handleCancelMaintenance} onSave={handleSaveMaintenance}/>
       )}
     </div>
   );
-}
-
-
-const styles = {
-  transactionStyle: {
-    padding: '5px',
-    margin: '5px',
-    border: '1px solid lightgray',
-    borderRadius: '5px',
-  }
 }
