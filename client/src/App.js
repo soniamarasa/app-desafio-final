@@ -55,6 +55,7 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = React.useState(LIST_SCREEN);
   const [filteredText, setFilteredText] = React.useState('');
   const [selectedTransaction, setSelectedTransaction] = React.useState(null);
+  const [newTransaction, setNewTransaction] = React.useState(false);
 
   React.useEffect(() => {
     const fetchTransactions = async () => {
@@ -83,10 +84,12 @@ export default function App() {
 
   React.useEffect(() => {
     const newScreen =
-      selectedTransaction !== null ? MAINTENANCE_SCREEN : LIST_SCREEN;
+      selectedTransaction !== null || newTransaction
+        ? MAINTENANCE_SCREEN
+        : LIST_SCREEN;
 
     setCurrentScreen(newScreen);
-  }, [selectedTransaction]);
+  }, [selectedTransaction, newTransaction]);
 
   const handlePeriodChange = (event) => {
     const newPeriod = event.target.value;
@@ -120,23 +123,54 @@ export default function App() {
     setSelectedTransaction(newSelectecTransaction);
   };
 
-
-
-  const handleCancelMaintenance = () => {
-    setSelectedTransaction(null);
-
+  const handleNewTransaction = async () => {
+    setNewTransaction(true);
   };
 
-  const handleSaveMaintenance = (newTransaction) => {
-    const {_id} = newTransaction;
+  const handleCancelMaintenance = () => {
+    setNewTransaction(false);
+    setSelectedTransaction(null);
+  };
 
-    const completeTransaction = {
-      ...newTransaction,
-      year: Number(newTransaction.yearMonthDay.substring(0,4)),
-      month: Number(newTransaction.yearMonthDay.substring(5,7)),
-      day: Number(newTransaction.yearMonthDay.substring(8,10)),
+  const handleSaveMaintenance = async (newTransaction) => {
+    const { _id } = newTransaction;
+
+    if (!_id) {
+      const insertedTransaction = {
+        ...newTransaction,
+        year: Number(newTransaction.yearMonthDay.substring(0, 4)),
+        month: Number(newTransaction.yearMonthDay.substring(5, 7)),
+        day: Number(newTransaction.yearMonthDay.substring(8, 10)),
+      };
+
+      const { data } = await api.post(`${RESOURCE}`, insertedTransaction);
+
+      const newTransactions = [...transactions, data.transaction];
+      newTransaction.sort((a,b) => 
+      a.yearMonthDay.localeCompare(b.yearMonthDay));
+
+
+      setTransactions(newTransactions);
+      setNewTransaction(false);
+
+    } else {
+      const editedTransaction = {
+        ...newTransaction,
+        year: Number(newTransaction.yearMonthDay.substring(0, 4)),
+        month: Number(newTransaction.yearMonthDay.substring(5, 7)),
+        day: Number(newTransaction.yearMonthDay.substring(8, 10)),
+      };
+      await api.put(`${RESOURCE}/${_id}`, editedTransaction);
+
+      const newTransactions = [...transactions];
+      const index = newTransactions.findIndex((transaction) => {
+        return transaction._id === editedTransaction._id;
+      });
+      newTransactions[index] = editedTransaction;
+
+      setTransactions(newTransactions);
+      setSelectedTransaction(null);
     }
-    api.put(`${RESOURCE}/${_id}`, completeTransaction);
   };
 
   return (
@@ -151,11 +185,16 @@ export default function App() {
           filteredText={filteredText}
           onDeleteTransaction={handleDeleteTransaction}
           onEditTransaction={handleEditTransaction}
+          onNewTransaction={handleNewTransaction}
           onFilterChange={handleFilterChange}
           onPeriodChange={handlePeriodChange}
         />
       ) : (
-        <MaintenanceScreen transaction={selectedTransaction} onCancel={handleCancelMaintenance} onSave={handleSaveMaintenance}/>
+        <MaintenanceScreen
+          transaction={selectedTransaction}
+          onCancel={handleCancelMaintenance}
+          onSave={handleSaveMaintenance}
+        />
       )}
     </div>
   );
